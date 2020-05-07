@@ -15,7 +15,6 @@
 
 @interface WristbandsPlugin : CDVPlugin <MinewBeaconManagerDelegate, CBCentralManagerDelegate> {
 }
-//@property (nonatomic, strong) NSString *callbackId;
 @property (nonatomic, strong) CDVInvokedUrlCommand* commandHelper;
 @property (nonatomic, strong) CDVPluginResult* pluginResult;
 @property (nonatomic, strong) CDVInvokedUrlCommand* pluginCommand;
@@ -116,11 +115,13 @@
     //Checks initial bluetooth status and then starts scanning
     bluetoothON = [centralManager state] == CBManagerStatePoweredOn;
     if (bluetoothON) {
-//        [self startScan];
-        
         [beaconManager startScan:@[defaultUUID] backgroundSupport:backgroudTracking];
         NSLog(@">>> Wristband Plugin: Started Scanning");
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Started Scanning"];
+        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
+    } else {
+        NSLog(@">>> Cannot start Scanning. Bluetooth is OFF.");
+        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Cannot start Scanning. Bluetooth is OFF."];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     }
 }
@@ -156,7 +157,7 @@
                 for (int i = 0; i < beacons.count; i++) {
                     MinewBeacon *beacon = beacons[i];
                     NSString *mac = [beacon getBeaconValue:BeaconValueIndex_Mac].stringValue;
-                    //Verifica se o beacon monitorado (uuid) está próximo
+                    //Checks if it's the monitored beacon
                     if ([trackedBeacon isEqualToString:mac]){
                         
                         //RSSI
@@ -228,7 +229,7 @@
 - (void)minewBeaconManager:(MinewBeaconManager *)manager appearBeacons:(NSArray<MinewBeacon *> *)beacons
 {
     for (int i = 0; i < beacons.count; i++) {
-        //Verifica se é o beacon monitorado (uuid)
+        //Checks if it's the monitored beacon
         MinewBeacon *beacon = beacons[i];
         NSString *mac = [beacon getBeaconValue:BeaconValueIndex_Mac].stringValue;
         if ([trackedBeacon isEqualToString:mac]){
@@ -241,7 +242,7 @@
 - (void)minewBeaconManager:(MinewBeaconManager *)manager disappearBeacons:(NSArray<MinewBeacon *> *)beacons
 {
     for (int i = 0; i < beacons.count; i++) {
-        //Verifica se é o beacon monitorado (uuid)
+        //Checks if it's the monitored beacon
         MinewBeacon *beacon = beacons[i];
         NSString *mac = [beacon getBeaconValue:BeaconValueIndex_Mac].stringValue;
         if ([trackedBeacon isEqualToString:mac]){
@@ -261,16 +262,16 @@
        bluetoothON = NO;
        beaconInRange = NO;
        [self stopScan];
-       
-       self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Bluetooth is OFF"];
+       self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Bluetooth OFF"];
        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
        
    }
    else if ([central state] == CBManagerStatePoweredOn) {
        NSLog(@">>> Bluetooth is ON");
        bluetoothON = YES;
-       //TRATAR ISSO!!!! Crash no inicio da app
        [self startScan];
+       self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Bluetooth ON"];
+       [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
    }
 }
 
