@@ -50,21 +50,18 @@
     if (wristbandModel == nil || [wristbandModel length] == 0) {
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"wristBandModel parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
-        [self.pluginResult setKeepCallbackAsBool:YES];
     }
     
     trackedBeacon = [command.arguments objectAtIndex:1];
     if (trackedBeacon == nil || [trackedBeacon length] == 0) {
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"trackedBeacon parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
-        [self.pluginResult setKeepCallbackAsBool:YES];
     }
     
     wristbandCommand = [command.arguments objectAtIndex:2];
     if (wristbandCommand == nil || [wristbandCommand length] == 0) {
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"command parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
-        [self.pluginResult setKeepCallbackAsBool:YES];
     }
     
     if ([[command.arguments objectAtIndex:3] isEqualToString:@"yes"]) {
@@ -74,7 +71,6 @@
     } else {
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Invalid backgroundTracking input value"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
-        [self.pluginResult setKeepCallbackAsBool:YES];
     }
     
     //Let's make it run...
@@ -110,8 +106,8 @@
     
     NSLog(@">>> Wristband Plugin Initialized");
     self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Plugin initialized"];
-    [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     [self.pluginResult setKeepCallbackAsBool:YES];
+    [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
 //    [self.pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
 }
 
@@ -125,13 +121,13 @@
         [beaconManager startScan:@[defaultUUID] backgroundSupport:backgroudTracking];
         NSLog(@">>> Wristband Plugin: Started Scanning");
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Started Scanning"];
-        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
         [self.pluginResult setKeepCallbackAsBool:YES];
+        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     } else {
         NSLog(@">>> Cannot start Scanning. Bluetooth is OFF.");
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Cannot start Scanning. Bluetooth is OFF."];
-        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
         [self.pluginResult setKeepCallbackAsBool:YES];
+        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     }
 }
 
@@ -143,13 +139,14 @@
     if (!bluetoothON) {
         NSLog(@">>> Wristband Plugin: Stopped Scanning. Bluetooth OFF");
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Stopped Scanning because Bluetooth is OFF"];
-        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
         [self.pluginResult setKeepCallbackAsBool:YES];
+        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     } else {
         NSLog(@">>> Wristband Plugin: Stopped Scanning.");
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Stopped Scanning"];
-        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
         [self.pluginResult setKeepCallbackAsBool:YES];
+        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
+
     }
 }
 
@@ -224,8 +221,8 @@
                         NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
                         
                         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:jsonString];
-                        [self.commandDelegate sendPluginResult:pluginResult callbackId:self.commandHelper.callbackId];
                         [self.pluginResult setKeepCallbackAsBool:YES];
+                        [self.commandDelegate sendPluginResult:pluginResult callbackId:self.commandHelper.callbackId];
                     }
                 }
             }
@@ -233,8 +230,8 @@
     	//Bluetooth is OFF
         beaconInRange = NO;
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Bluetooth is OFF"];
-        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
         [self.pluginResult setKeepCallbackAsBool:YES];
+        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     }
     
 }
@@ -276,8 +273,8 @@
        beaconInRange = NO;
        [self stopScan];
        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Bluetooth OFF"];
-       [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
        [self.pluginResult setKeepCallbackAsBool:YES];
+       [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
        
    }
    else if ([central state] == CBManagerStatePoweredOn) {
@@ -285,8 +282,8 @@
        bluetoothON = YES;
        [self startScan];
        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Bluetooth ON"];
-       [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
        [self.pluginResult setKeepCallbackAsBool:YES];
+       [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
    }
 }
 
