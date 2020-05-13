@@ -73,7 +73,15 @@
         NSLog(@"> PostURL: %@", postURL);
     }
     
-    timer = (int)[command.arguments objectAtIndex:4];
+    NSString *timerString = [command.arguments objectAtIndex:4];
+    if (timerString == nil || [timerString length] == 0) {
+        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Timer input parameter cannot be empty"];
+        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
+    } else {
+            timer = [timerString intValue];
+            NSLog(@"> Timer: %i", timer);
+    }
+    
     NSNumber *num = [NSNumber numberWithInt:timer];
     if(num == nil)  {
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Timer input parameter cannot be empty"];
@@ -276,7 +284,7 @@
                             NSLog(@"Error serializing JSON Object: %@", [error localizedDescription]);
                         }
                         NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-                        NSLog(@"%@",jsonString);
+//                        NSLog(@"%@",jsonString);
                         
                         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:jsonString];
                         [self.pluginResult setKeepCallbackAsBool:YES];
