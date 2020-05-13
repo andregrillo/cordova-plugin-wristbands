@@ -22,6 +22,7 @@
 @end
 
 @implementation WristbandsPlugin {
+    int timer;
     NSString *postURL;
     NSMutableDictionary *returnJSONParameters;
     NSArray * scannedDevices;
@@ -48,28 +49,38 @@
     //Checking if parameters are valid
     wristbandModel = [command.arguments objectAtIndex:0];
     if (wristbandModel == nil || [wristbandModel length] == 0) {
-        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"wristBandModel parameter cannot be empty"];
+        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"wristBandModel input parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     }
     
     trackedBeacon = [command.arguments objectAtIndex:1];
     if (trackedBeacon == nil || [trackedBeacon length] == 0) {
-        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"trackedBeacon parameter cannot be empty"];
+        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"trackedBeacon input parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     }
     
     wristbandCommand = [command.arguments objectAtIndex:2];
     if (wristbandCommand == nil || [wristbandCommand length] == 0) {
-        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"command parameter cannot be empty"];
+        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"command input parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     }
     
     postURL = [command.arguments objectAtIndex:3];
     if (postURL == nil || [postURL length] == 0) {
-        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"URL parameter cannot be empty"];
+        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"URL input parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     } else {
         NSLog(@"> PostURL: %@", postURL);
+    }
+    
+    timer = (int)[command.arguments objectAtIndex:4];
+    NSNumber *num = [NSNumber numberWithInt:timer];
+    if(num == nil)  {
+        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Timer input parameter cannot be empty"];
+        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
+    }
+    else {
+        NSLog(@"> Timer delay: %i", timer);
     }
     
     //Let's make it run...
