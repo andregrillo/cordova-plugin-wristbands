@@ -22,6 +22,7 @@
 @end
 
 @implementation WristbandsPlugin {
+    NSString *postURL;
     NSMutableDictionary *returnJSONParameters;
     NSArray * scannedDevices;
     MinewBeaconManager *beaconManager;
@@ -40,8 +41,7 @@
 {
     self.pluginResult = nil;
     [self.pluginResult setKeepCallbackAsBool:YES];
-    //[self.pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
-//    self.callbackId = command.callbackId;
+
     self.commandHelper = command;
     //Plugin Inputs
     
@@ -64,13 +64,12 @@
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     }
     
-    if ([[command.arguments objectAtIndex:3] isEqualToString:@"yes"]) {
-        backgroudTracking = YES;
-    } else if ([[command.arguments objectAtIndex:3] isEqualToString:@"no"]) {
-        backgroudTracking = NO;
-    } else {
-        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Invalid backgroundTracking input value"];
+    postURL = [command.arguments objectAtIndex:3];
+    if (postURL == nil || [postURL length] == 0) {
+        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"URL parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
+    } else {
+        NSLog(@"> PostURL: %@", postURL);
     }
     
     //Let's make it run...
@@ -89,8 +88,8 @@
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
         [self.pluginResult setKeepCallbackAsBool:YES];
     }
-
 }
+
 
 - (void)initialize {
     NSLog(@">>> Plugin initialization");
@@ -103,12 +102,10 @@
     centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
     beaconManager = [MinewBeaconManager sharedInstance];
     beaconManager.delegate = self;
-    
     NSLog(@">>> Wristband Plugin Initialized");
     self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Plugin initialized"];
     [self.pluginResult setKeepCallbackAsBool:YES];
     [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
-//    [self.pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
 }
 
 - (void)startScan {
@@ -120,6 +117,7 @@
     if (bluetoothON) {
         [beaconManager startScan:@[defaultUUID] backgroundSupport:backgroudTracking];
         NSLog(@">>> Wristband Plugin: Started Scanning");
+        [NSTimer scheduledTimerWithTimeInterval:10 target:self selector:@selector(sendJson2REST) userInfo:nil repeats:YES];
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Started Scanning"];
         [self.pluginResult setKeepCallbackAsBool:YES];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
@@ -148,6 +146,45 @@
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
 
     }
+}
+
+
+- (void)sendJson2REST {
+    
+    // Preparing the JSON
+    NSError *error;
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:returnJSONParameters options:NSJSONWritingPrettyPrinted error:&error];
+    if (!jsonData && error) {
+        NSLog(@"Error serializing JSON Object: %@", [error localizedDescription]);
+    }
+    NSString *postString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    NSLog(@">>> PostString: %@",postString);
+    
+    // Posting it to the REST URL
+//    postURL = @"https://atc-dev.outsystemsenterprise.com/HomeQuarantine_Care_API/rest/Wristband/ReceiveWristbandInfo";
+    
+    NSLog(@">>> URL: %@", postURL);
+    
+    NSURL *url=[NSURL URLWithString:postURL];
+    NSMutableURLRequest *request=[[NSMutableURLRequest alloc]initWithURL:url];
+    [request setHTTPMethod:@"POST"];
+    [request addValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    [request setHTTPBody:jsonData];
+    
+    NSURLSessionConfiguration *defaultConfigObject = [NSURLSessionConfiguration defaultSessionConfiguration];
+    NSURLSession *session = [NSURLSession sessionWithConfiguration: defaultConfigObject delegate: nil delegateQueue: [NSOperationQueue mainQueue]];
+    
+    NSURLSessionTask *task=[session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
+                            {
+        if (error==nil) {
+            NSDictionary *dicData=[NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];\
+            NSLog(@">>> Response Data: %@",dicData);
+        }
+        else{
+            NSLog(@">>> Error posting jsonData: %@", error.localizedDescription);
+        }
+    }];
+    [task resume];
 }
 
 #pragma mark ********************************** Device Manager Delegate Methods
@@ -213,12 +250,22 @@
                         int battery = (int)[beacon getBeaconValue:BeaconValueIndex_BatteryLevel].intValue;
                         [returnJSONParameters setObject:[NSNumber numberWithInt:battery] forKey:@"battery"];
                         
-                        NSLog(@"%@",returnJSONParameters);
+                        //time stamp
+                        NSDate *now = [NSDate date];
+                        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+                        [dateFormatter setDateFormat:@"dd-MM-yyyy HH:mm:ss"];
+                        [returnJSONParameters setObject:[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate:now]] forKey:@"timeStamp"];
                         
-                        // Returns the JSON
+//                        NSLog(@"%@",returnJSONParameters);
+                        
+                        // Returns the JSON to Cordova
                         NSError * error;
-                        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:returnJSONParameters options:0 error:&error];
+                        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:returnJSONParameters options:NSJSONWritingPrettyPrinted error:&error];
+                        if (!jsonData && error) {
+                            NSLog(@"Error serializing JSON Object: %@", [error localizedDescription]);
+                        }
                         NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                        NSLog(@"%@",jsonString);
                         
                         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:jsonString];
                         [self.pluginResult setKeepCallbackAsBool:YES];
@@ -227,13 +274,12 @@
                 }
             }
     } else {
-    	//Bluetooth is OFF
+        //Bluetooth is OFF
         beaconInRange = NO;
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Bluetooth is OFF"];
         [self.pluginResult setKeepCallbackAsBool:YES];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     }
-    
 }
 
 - (void)minewBeaconManager:(MinewBeaconManager *)manager appearBeacons:(NSArray<MinewBeacon *> *)beacons
