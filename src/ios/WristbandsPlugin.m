@@ -33,7 +33,7 @@
     NSString *wristbandModel;
     NSString *trackedBeacon;
     NSString *wristbandCommand;
-    BOOL backgroudTracking;
+    //BOOL backgroudTracking;
     BOOL bluetoothON;
     BOOL beaconInRange;
     float distance;
@@ -132,7 +132,7 @@
     //Checks initial bluetooth status and then starts scanning
     bluetoothON = [centralManager state] == CBManagerStatePoweredOn;
     if (bluetoothON) {
-        [beaconManager startScan:@[defaultUUID] backgroundSupport:backgroudTracking];
+        [beaconManager startScan:@[defaultUUID] backgroundSupport:YES];
         NSLog(@">>> Wristband Plugin: Started Scanning");
         timerDelay = [NSTimer scheduledTimerWithTimeInterval:timer target:self selector:@selector(sendJson2REST) userInfo:nil repeats:YES];
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Started Scanning"];
