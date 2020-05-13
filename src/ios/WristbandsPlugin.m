@@ -22,6 +22,7 @@
 @end
 
 @implementation WristbandsPlugin {
+    NSTimer *timerDelay;
     int timer;
     NSString *postURL;
     NSMutableDictionary *returnJSONParameters;
@@ -133,7 +134,7 @@
     if (bluetoothON) {
         [beaconManager startScan:@[defaultUUID] backgroundSupport:backgroudTracking];
         NSLog(@">>> Wristband Plugin: Started Scanning");
-        [NSTimer scheduledTimerWithTimeInterval:timer target:self selector:@selector(sendJson2REST) userInfo:nil repeats:YES];
+        timerDelay = [NSTimer scheduledTimerWithTimeInterval:timer target:self selector:@selector(sendJson2REST) userInfo:nil repeats:YES];
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Started Scanning"];
         [self.pluginResult setKeepCallbackAsBool:YES];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
@@ -147,6 +148,8 @@
 
 - (void)stopScan {
     NSLog(@">>> Stop Scan");
+    [timerDelay invalidate];
+    timerDelay = nil;
     [[MinewBeaconManager sharedInstance] stopScan];
     scannedDevices = nil;
     
