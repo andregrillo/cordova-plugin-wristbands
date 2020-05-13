@@ -128,7 +128,7 @@
     if (bluetoothON) {
         [beaconManager startScan:@[defaultUUID] backgroundSupport:backgroudTracking];
         NSLog(@">>> Wristband Plugin: Started Scanning");
-        [NSTimer scheduledTimerWithTimeInterval:10 target:self selector:@selector(sendJson2REST) userInfo:nil repeats:YES];
+        [NSTimer scheduledTimerWithTimeInterval:timer target:self selector:@selector(sendJson2REST) userInfo:nil repeats:YES];
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Started Scanning"];
         [self.pluginResult setKeepCallbackAsBool:YES];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
