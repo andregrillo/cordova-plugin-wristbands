@@ -1,5 +1,5 @@
                var exec = require('cordova/exec');
                
-               exports.setDevice = function (success, error, model, deviceId, command, backgroundTracking) {
-               exec(success, error, 'WristbandsPlugin', 'setDevice', [model, deviceId, command, backgroundTracking]); }
+               exports.setDevice = function (success, error, model, deviceId, command, url) {
+               exec(success, error, 'WristbandsPlugin', 'setDevice', [model, deviceId, command, url]); }
 
