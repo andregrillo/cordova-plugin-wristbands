@@ -51,18 +51,24 @@
     if (wristbandModel == nil || [wristbandModel length] == 0) {
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"wristBandModel input parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
+    } else {
+        NSLog(@"> WristbandModel: %@", wristbandModel);
     }
     
     trackedBeacon = [command.arguments objectAtIndex:1];
     if (trackedBeacon == nil || [trackedBeacon length] == 0) {
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"trackedBeacon input parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
+    } else {
+        NSLog(@"> TrackedBeacon: %@", trackedBeacon);
     }
     
     wristbandCommand = [command.arguments objectAtIndex:2];
     if (wristbandCommand == nil || [wristbandCommand length] == 0) {
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"command input parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
+    } else {
+        NSLog(@"> Command: %@", wristbandCommand);
     }
     
     postURL = [command.arguments objectAtIndex:3];
@@ -80,15 +86,6 @@
     } else {
             timer = [timerString intValue];
             NSLog(@"> Timer: %i", timer);
-    }
-    
-    NSNumber *num = [NSNumber numberWithInt:timer];
-    if(num == nil)  {
-        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Timer input parameter cannot be empty"];
-        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
-    }
-    else {
-        NSLog(@"> Timer delay: %i", timer);
     }
     
     //Let's make it run...
@@ -182,7 +179,7 @@
     // Posting it to the REST URL
 //    postURL = @"https://atc-dev.outsystemsenterprise.com/HomeQuarantine_Care_API/rest/Wristband/ReceiveWristbandInfo";
     
-    NSLog(@">>> URL: %@", postURL);
+//    NSLog(@">>> URL: %@", postURL);
     
     NSURL *url=[NSURL URLWithString:postURL];
     NSMutableURLRequest *request=[[NSMutableURLRequest alloc]initWithURL:url];
