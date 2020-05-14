@@ -24,6 +24,7 @@
 
 @implementation WristbandsPlugin {
     NSTimer *timerDelay;
+    BOOL pluginInitialized;
     int timer;
     NSString *postURL;
     NSMutableDictionary *returnJSONParameters;
@@ -42,6 +43,7 @@
 
 - (void)setDevice:(CDVInvokedUrlCommand*)command
 {
+    pluginInitialized = NO;
     self.pluginResult = nil;
     [self.pluginResult setKeepCallbackAsBool:YES];
 
@@ -108,39 +110,41 @@
     }
 }
 
-- (void)setBeaconSDKDelegate{
+- (void)setDelegate:(CDVInvokedUrlCommand*)command {
+    pluginInitialized = NO;
     centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
     beaconManager = [MinewBeaconManager sharedInstance];
     beaconManager.delegate = self;
+    NSLog(@"Set Beacon SDK Delegate OK");
     
     //Sending a local notification if in background (just for testing). Should be removed from the final plugin.
-//    UNUserNotificationCenter* center = [UNUserNotificationCenter currentNotificationCenter];
-//    [center requestAuthorizationWithOptions:(UNAuthorizationOptionAlert + UNAuthorizationOptionSound)
-//                          completionHandler:^(BOOL granted, NSError * _Nullable error) {
-//                              // Enable or disable features based on authorization.
-//
-//                                if (!error) {
-//                                    NSLog(@"Notification Authorization ok!");
-//                                }
-//                          }];
-//    [[UIApplication sharedApplication] registerForRemoteNotifications]; // you can also set here for local notification.
-//
-//
-//    UNMutableNotificationContent* content = [[UNMutableNotificationContent alloc] init];
-//    content.title = [NSString localizedUserNotificationStringForKey:@"WOHOOO! 😎" arguments:nil];
-//    content.body = [NSString localizedUserNotificationStringForKey:@"The set delegate Method got fired!"
-//                arguments:nil];
-//    content.sound = [UNNotificationSound defaultSound];
-//
-//    // Deliver the notification
-//    UNTimeIntervalNotificationTrigger* trigger = [UNTimeIntervalNotificationTrigger
-//                triggerWithTimeInterval:10 repeats:NO];
-//    UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:@"Alert test"
-//                content:content trigger:trigger];
-//
-//    // Schedule the notification.
-//    UNUserNotificationCenter* notificationCenter = [UNUserNotificationCenter currentNotificationCenter];
-//    [notificationCenter addNotificationRequest:request withCompletionHandler:nil];
+    UNUserNotificationCenter* center = [UNUserNotificationCenter currentNotificationCenter];
+    [center requestAuthorizationWithOptions:(UNAuthorizationOptionAlert + UNAuthorizationOptionSound)
+                          completionHandler:^(BOOL granted, NSError * _Nullable error) {
+                              // Enable or disable features based on authorization.
+
+                                if (!error) {
+                                    NSLog(@"Notification Authorization OK");
+                                }
+                          }];
+    [[UIApplication sharedApplication] registerForRemoteNotifications]; // you can also set here for local notification.
+
+
+    UNMutableNotificationContent* content = [[UNMutableNotificationContent alloc] init];
+    content.title = [NSString localizedUserNotificationStringForKey:@"WOHOOO! 😎" arguments:nil];
+    content.body = [NSString localizedUserNotificationStringForKey:@"The set delegate Method got fired!"
+                arguments:nil];
+    content.sound = [UNNotificationSound defaultSound];
+
+    // Deliver the notification
+    UNTimeIntervalNotificationTrigger* trigger = [UNTimeIntervalNotificationTrigger
+                triggerWithTimeInterval:1 repeats:NO];
+    UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:@"Alert test"
+                content:content trigger:trigger];
+
+    // Schedule the notification.
+    UNUserNotificationCenter* notificationCenter = [UNUserNotificationCenter currentNotificationCenter];
+    [notificationCenter addNotificationRequest:request withCompletionHandler:nil];
 
 }
 
@@ -155,7 +159,8 @@
 //    centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
 //    beaconManager = [MinewBeaconManager sharedInstance];
 //    beaconManager.delegate = self;
-    [self setBeaconSDKDelegate];
+    [self setDelegate:self.commandHelper];
+    pluginInitialized = YES;
     NSLog(@">>> Wristband Plugin Initialized");
     self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Plugin initialized"];
     [self.pluginResult setKeepCallbackAsBool:YES];
@@ -392,7 +397,9 @@
    else if ([central state] == CBManagerStatePoweredOn) {
        NSLog(@">>> Bluetooth is ON");
        bluetoothON = YES;
-       [self startScan];
+       if (pluginInitialized) {
+        [self startScan];
+       }
        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Bluetooth ON"];
        [self.pluginResult setKeepCallbackAsBool:YES];
        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
