@@ -10,10 +10,11 @@
 #import "MinewBeacon.h"
 #import "MinewBeaconManager.h"
 #import <CoreBluetooth/CoreBluetooth.h>
+#import <UserNotifications/UserNotifications.h>
 
 #define defaultUUID @"FDA50693-A4E2-4FB1-AFCF-C6EB07647825"
 
-@interface WristbandsPlugin : CDVPlugin <MinewBeaconManagerDelegate, CBCentralManagerDelegate> {
+@interface WristbandsPlugin : CDVPlugin <MinewBeaconManagerDelegate, CBCentralManagerDelegate, UNUserNotificationCenterDelegate> {
 }
 @property (nonatomic, strong) CDVInvokedUrlCommand* commandHelper;
 @property (nonatomic, strong) CDVPluginResult* pluginResult;
@@ -33,7 +34,7 @@
     NSString *wristbandModel;
     NSString *trackedBeacon;
     NSString *wristbandCommand;
-    //BOOL backgroudTracking;
+//    BOOL backgroudTracking;
     BOOL bluetoothON;
     BOOL beaconInRange;
     float distance;
@@ -107,6 +108,41 @@
     }
 }
 
+- (void)setBeaconSDKDelegate{
+    centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
+    beaconManager = [MinewBeaconManager sharedInstance];
+    beaconManager.delegate = self;
+    
+    //Sending a local notification if in background (just for testing). Should be removed from the final plugin.
+//    UNUserNotificationCenter* center = [UNUserNotificationCenter currentNotificationCenter];
+//    [center requestAuthorizationWithOptions:(UNAuthorizationOptionAlert + UNAuthorizationOptionSound)
+//                          completionHandler:^(BOOL granted, NSError * _Nullable error) {
+//                              // Enable or disable features based on authorization.
+//        
+//                                if (!error) {
+//                                    NSLog(@"Notification Authorization ok!");
+//                                }
+//                          }];
+//    [[UIApplication sharedApplication] registerForRemoteNotifications]; // you can also set here for local notification.
+//    
+//    
+//    UNMutableNotificationContent* content = [[UNMutableNotificationContent alloc] init];
+//    content.title = [NSString localizedUserNotificationStringForKey:@"WOHOOO! 😎" arguments:nil];
+//    content.body = [NSString localizedUserNotificationStringForKey:@"The set delegate Method got fired!"
+//                arguments:nil];
+//    content.sound = [UNNotificationSound defaultSound];
+//
+//    // Deliver the notification
+//    UNTimeIntervalNotificationTrigger* trigger = [UNTimeIntervalNotificationTrigger
+//                triggerWithTimeInterval:10 repeats:NO];
+//    UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:@"Alert test"
+//                content:content trigger:trigger];
+//
+//    // Schedule the notification.
+//    UNUserNotificationCenter* notificationCenter = [UNUserNotificationCenter currentNotificationCenter];
+//    [notificationCenter addNotificationRequest:request withCompletionHandler:nil];
+
+}
 
 - (void)initialize {
     NSLog(@">>> Plugin initialization");
@@ -116,9 +152,10 @@
 //    trackedBeacon = @"ac233f61e8c0";
     
     //Starting the SDK
-    centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
-    beaconManager = [MinewBeaconManager sharedInstance];
-    beaconManager.delegate = self;
+//    centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
+//    beaconManager = [MinewBeaconManager sharedInstance];
+//    beaconManager.delegate = self;
+    [self setBeaconSDKDelegate];
     NSLog(@">>> Wristband Plugin Initialized");
     self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Plugin initialized"];
     [self.pluginResult setKeepCallbackAsBool:YES];
@@ -172,6 +209,9 @@
     
     // Preparing the JSON
     NSError *error;
+    if (returnJSONParameters.count == 0) {
+        [returnJSONParameters setObject:trackedBeacon forKey:@"mac"];
+    }
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:returnJSONParameters options:NSJSONWritingPrettyPrinted error:&error];
     if (!jsonData && error) {
         NSLog(@"Error serializing JSON Object: %@", [error localizedDescription]);
