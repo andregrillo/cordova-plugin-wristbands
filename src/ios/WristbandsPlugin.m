@@ -102,6 +102,9 @@
     else if ([wristbandCommand isEqualToString:@"stop"]) {
         [self stopScan];
     }
+    else if ([wristbandCommand isEqualToString:@"setDelegate"]) {
+        [self setDelegate];
+    }
     else {
         //No valid command parameter
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Invalid command input value"];
@@ -110,7 +113,7 @@
     }
 }
 
-- (void)setDelegate:(CDVInvokedUrlCommand*)command {
+- (void)setDelegate {
     pluginInitialized = NO;
     centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
     beaconManager = [MinewBeaconManager sharedInstance];
@@ -139,13 +142,16 @@
     // Deliver the notification
     UNTimeIntervalNotificationTrigger* trigger = [UNTimeIntervalNotificationTrigger
                 triggerWithTimeInterval:1 repeats:NO];
-    UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:@"Alert test"
+    UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:@"setDelegateAlert"
                 content:content trigger:trigger];
 
     // Schedule the notification.
     UNUserNotificationCenter* notificationCenter = [UNUserNotificationCenter currentNotificationCenter];
     [notificationCenter addNotificationRequest:request withCompletionHandler:nil];
-
+    
+    self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"iOS SDK Delegate initialized"];
+    [self.pluginResult setKeepCallbackAsBool:YES];
+    [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
 }
 
 - (void)initialize {
@@ -159,7 +165,7 @@
 //    centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
 //    beaconManager = [MinewBeaconManager sharedInstance];
 //    beaconManager.delegate = self;
-    [self setDelegate:self.commandHelper];
+    [self setDelegate];
     pluginInitialized = YES;
     NSLog(@">>> Wristband Plugin Initialized");
     self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Plugin initialized"];
