@@ -167,6 +167,7 @@
 //    beaconManager.delegate = self;
     [self setDelegate];
     pluginInitialized = YES;
+    [self startScan];
     NSLog(@">>> Wristband Plugin Initialized");
     self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Plugin initialized"];
     [self.pluginResult setKeepCallbackAsBool:YES];
@@ -175,7 +176,7 @@
 
 - (void)startScan {
     NSLog(@">>> Start Scan");
-    beaconManager.delegate = self;
+//    beaconManager.delegate = self;
     
     //Checks initial bluetooth status and then starts scanning
     bluetoothON = [centralManager state] == CBManagerStatePoweredOn;
