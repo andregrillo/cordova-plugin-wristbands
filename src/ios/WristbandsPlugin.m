@@ -12,7 +12,7 @@
 #import <CoreBluetooth/CoreBluetooth.h>
 #import <UserNotifications/UserNotifications.h>
 
-#define defaultUUID @"FDA50693-A4E2-4FB1-AFCF-C6EB07647825"
+//#define defaultUUID @"FDA50693-A4E2-4FB1-AFCF-C6EB07647825"
 
 @interface WristbandsPlugin : CDVPlugin <MinewBeaconManagerDelegate, CBCentralManagerDelegate, UNUserNotificationCenterDelegate> {
 }
@@ -25,25 +25,29 @@
 @implementation WristbandsPlugin {
     NSTimer *timerDelay;
 //    BOOL pluginInitialized;
+//    model, uuid, major, minor, command, url, timer
     int timer;
     NSString *postURL;
     NSMutableDictionary *returnJSONParameters;
+    NSMutableDictionary *lastReturnJSONTimeStamp;
     NSArray * scannedDevices;
     MinewBeaconManager *beaconManager;
     CBCentralManager *centralManager;
     //Plugin Inputs
     NSString *wristbandModel;
-    NSString *trackedBeacon;
+    NSString *trackedUUID;
+    NSString *trackedMajor;
+    NSString *trackedMinor;
     NSString *wristbandCommand;
 //    BOOL backgroudTracking;
     BOOL bluetoothON;
     BOOL beaconInRange;
+    BOOL scanning;
     float distance;
 }
 
 - (void)setDevice:(CDVInvokedUrlCommand*)command
 {
-//    pluginInitialized = NO;
     self.pluginResult = nil;
     [self.pluginResult setKeepCallbackAsBool:YES];
 
@@ -51,6 +55,7 @@
     //Plugin Inputs
     
     //Checking if parameters are valid
+    //Beacon Model
     wristbandModel = [command.arguments objectAtIndex:0];
     if (wristbandModel == nil || [wristbandModel length] == 0) {
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"wristBandModel input parameter cannot be empty"];
@@ -59,15 +64,35 @@
         NSLog(@"> WristbandModel: %@", wristbandModel);
     }
     
-    trackedBeacon = [command.arguments objectAtIndex:1];
-    if (trackedBeacon == nil || [trackedBeacon length] == 0) {
-        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"trackedBeacon input parameter cannot be empty"];
+    //UUID
+    trackedUUID = [command.arguments objectAtIndex:1];
+    if (trackedUUID == nil || [trackedUUID length] == 0) {
+        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"trackedUUID input parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     } else {
-        NSLog(@"> TrackedBeacon: %@", trackedBeacon);
+        NSLog(@"> TrackedUUID: %@", trackedUUID);
     }
     
-    wristbandCommand = [command.arguments objectAtIndex:2];
+    //Major
+    trackedMajor = [command.arguments objectAtIndex:2];
+    if (trackedMajor == nil || [trackedMajor length] == 0) {
+        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Major input parameter cannot be empty"];
+        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
+    } else {
+        NSLog(@"> Major: %@", trackedMajor);
+    }
+    
+    //Minor
+    trackedMinor = [command.arguments objectAtIndex:3];
+    if (trackedMinor == nil || [trackedMinor length] == 0) {
+        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Minor input parameter cannot be empty"];
+        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
+    } else {
+        NSLog(@"> Minor: %@", trackedMinor);
+    }
+    
+    //Command
+    wristbandCommand = [command.arguments objectAtIndex:4];
     if (wristbandCommand == nil || [wristbandCommand length] == 0) {
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"command input parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
@@ -75,7 +100,8 @@
         NSLog(@"> Command: %@", wristbandCommand);
     }
     
-    postURL = [command.arguments objectAtIndex:3];
+    //URL
+    postURL = [command.arguments objectAtIndex:5];
     if (postURL == nil || [postURL length] == 0) {
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"URL input parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
@@ -83,7 +109,8 @@
         NSLog(@"> PostURL: %@", postURL);
     }
     
-    NSString *timerString = [command.arguments objectAtIndex:4];
+    //Timer
+    NSString *timerString = [command.arguments objectAtIndex:6];
     if (timerString == nil || [timerString length] == 0) {
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Timer input parameter cannot be empty"];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
@@ -102,9 +129,9 @@
     else if ([wristbandCommand isEqualToString:@"stop"]) {
         [self stopScan];
     }
-    else if ([wristbandCommand isEqualToString:@"setDelegate"]) {
-        [self setDelegate];
-    }
+//    else if ([wristbandCommand isEqualToString:@"setDelegate"]) {
+//        [self setDelegate];
+//    }
     else {
         //No valid command parameter
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Invalid command input value"];
@@ -156,9 +183,11 @@
 
 - (void)initialize {
     NSLog(@">>> Plugin initialization");
+    scanning = NO;
     beaconInRange = NO;
     distance = 0;
-    returnJSONParameters = [[NSMutableDictionary alloc] initWithCapacity:8 ];
+    returnJSONParameters = [[NSMutableDictionary alloc] initWithCapacity:10 ];
+    lastReturnJSONTimeStamp = [[NSMutableDictionary alloc] initWithCapacity:1 ];
 //    trackedBeacon = @"ac233f61e8c0";
     
     //Starting the SDK
@@ -167,7 +196,7 @@
 //    beaconManager.delegate = self;
     [self setDelegate];
 //    pluginInitialized = YES;
-    [self startScan];
+//    [self startScan];
     NSLog(@">>> Wristband Plugin Initialized");
     self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Plugin initialized"];
     [self.pluginResult setKeepCallbackAsBool:YES];
@@ -176,14 +205,17 @@
 
 - (void)startScan {
     NSLog(@">>> Start Scan");
+    
 //    beaconManager.delegate = self;
     
     //Checks initial bluetooth status and then starts scanning
     bluetoothON = [centralManager state] == CBManagerStatePoweredOn;
+    NSLog(@">>> Bluetooth state: %ld", (long)[centralManager state]);
     if (bluetoothON) {
-        [beaconManager startScan:@[defaultUUID] backgroundSupport:YES];
+        [beaconManager startScan:@[trackedUUID] backgroundSupport:YES];
         NSLog(@">>> Wristband Plugin: Started Scanning");
         timerDelay = [NSTimer scheduledTimerWithTimeInterval:timer target:self selector:@selector(sendJson2REST) userInfo:nil repeats:YES];
+        scanning = YES;
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Started Scanning"];
         [self.pluginResult setKeepCallbackAsBool:YES];
         [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
@@ -197,6 +229,7 @@
 
 - (void)stopScan {
     NSLog(@">>> Stop Scan");
+    scanning = NO;
     [timerDelay invalidate];
     timerDelay = nil;
     [[MinewBeaconManager sharedInstance] stopScan];
@@ -221,48 +254,63 @@
     
     // Preparing the JSON
     NSError *error;
-    if (returnJSONParameters.count == 0) {
+    NSData *jsonData;
+    if (returnJSONParameters.count == 0 || returnJSONParameters[@"timeStamp"] == lastReturnJSONTimeStamp[@"timeStamp"] || returnJSONParameters[@"range"] == [NSNumber numberWithBool:NO] ) {
+//        beaconInRange = NO;
+        
         //time stamp
         NSDate *now = [NSDate date];
         NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
         [dateFormatter setDateFormat:@"dd-MM-yyyy HH:mm:ss"];
-        [returnJSONParameters setObject:[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate:now]] forKey:@"timeStamp"];
-        [returnJSONParameters setObject:trackedBeacon forKey:@"mac"];
-        [returnJSONParameters setObject:[NSNumber numberWithBool:NO] forKey:@"range"];
         
+        NSMutableDictionary *returnJsonNotConnected = [[NSMutableDictionary alloc] initWithCapacity:5 ];
+        
+        [returnJsonNotConnected setObject:[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate:now]] forKey:@"timeStamp"];
+        [returnJsonNotConnected setObject:trackedUUID forKey:@"uuid"];
+        [returnJsonNotConnected setObject:trackedMajor forKey:@"major"];
+        [returnJsonNotConnected setObject:trackedMinor forKey:@"minor"];
+        [returnJsonNotConnected setObject:[NSNumber numberWithBool:NO] forKey:@"range"];
+        
+        jsonData = [NSJSONSerialization dataWithJSONObject:returnJsonNotConnected options:NSJSONWritingPrettyPrinted error:&error];
+        
+    } else {
+        [lastReturnJSONTimeStamp setObject:returnJSONParameters[@"timeStamp"] forKey:@"timeStamp"];
+        jsonData = [NSJSONSerialization dataWithJSONObject:returnJSONParameters options:NSJSONWritingPrettyPrinted error:&error];
     }
-    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:returnJSONParameters options:NSJSONWritingPrettyPrinted error:&error];
+//    jsonData = [NSJSONSerialization dataWithJSONObject:returnJSONParameters options:NSJSONWritingPrettyPrinted error:&error];
     if (!jsonData && error) {
         NSLog(@"Error serializing JSON Object: %@", [error localizedDescription]);
+    } else {
+        NSString *postString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+            NSLog(@">>> PostString: %@",postString);
+            
+            // Posting it to the REST URL
+        //    postURL = @"https://atc-dev.outsystemsenterprise.com/HomeQuarantine_Care_API/rest/Wristband/ReceiveWristbandInfo";
+            
+        //    NSLog(@">>> URL: %@", postURL);
+            
+            NSURL *url=[NSURL URLWithString:postURL];
+            NSMutableURLRequest *request=[[NSMutableURLRequest alloc]initWithURL:url];
+            [request setHTTPMethod:@"POST"];
+            [request addValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+            [request setHTTPBody:jsonData];
+            
+            NSURLSessionConfiguration *defaultConfigObject = [NSURLSessionConfiguration defaultSessionConfiguration];
+            NSURLSession *session = [NSURLSession sessionWithConfiguration: defaultConfigObject delegate: nil delegateQueue: [NSOperationQueue mainQueue]];
+            
+            NSURLSessionTask *task=[session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
+                                    {
+                if (error==nil) {
+                    NSDictionary *dicData=[NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];\
+                    NSLog(@">>> Response Data: %@",dicData);
+                }
+                else{
+                    NSLog(@">>> Error posting jsonData: %@", error.localizedDescription);
+                }
+            }];
+            [task resume];
     }
-    NSString *postString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-    NSLog(@">>> PostString: %@",postString);
     
-    // Posting it to the REST URL
-//    postURL = @"https://atc-dev.outsystemsenterprise.com/HomeQuarantine_Care_API/rest/Wristband/ReceiveWristbandInfo";
-    
-//    NSLog(@">>> URL: %@", postURL);
-    
-    NSURL *url=[NSURL URLWithString:postURL];
-    NSMutableURLRequest *request=[[NSMutableURLRequest alloc]initWithURL:url];
-    [request setHTTPMethod:@"POST"];
-    [request addValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-    [request setHTTPBody:jsonData];
-    
-    NSURLSessionConfiguration *defaultConfigObject = [NSURLSessionConfiguration defaultSessionConfiguration];
-    NSURLSession *session = [NSURLSession sessionWithConfiguration: defaultConfigObject delegate: nil delegateQueue: [NSOperationQueue mainQueue]];
-    
-    NSURLSessionTask *task=[session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
-                            {
-        if (error==nil) {
-            NSDictionary *dicData=[NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];\
-            NSLog(@">>> Response Data: %@",dicData);
-        }
-        else{
-            NSLog(@">>> Error posting jsonData: %@", error.localizedDescription);
-        }
-    }];
-    [task resume];
 }
 
 #pragma mark ********************************** Device Manager Delegate Methods
@@ -279,9 +327,12 @@
 
                 for (int i = 0; i < beacons.count; i++) {
                     MinewBeacon *beacon = beacons[i];
-                    NSString *mac = [beacon getBeaconValue:BeaconValueIndex_Mac].stringValue;
+//                    NSString *mac = [beacon getBeaconValue:BeaconValueIndex_Mac].stringValue;
+                    NSString *uuid = [beacon getBeaconValue:BeaconValueIndex_UUID].stringValue;
+                    NSString *major = [NSString stringWithFormat:@"%li", (long)[beacon getBeaconValue:BeaconValueIndex_Major].intValue];
+                    NSString *minor = [NSString stringWithFormat:@"%li", (long)[beacon getBeaconValue:BeaconValueIndex_Minor].intValue];
                     //Checks if it's the monitored beacon
-                    if ([trackedBeacon isEqualToString:mac]){
+                    if ([trackedUUID isEqualToString:uuid] && [trackedMajor isEqualToString:major] && [trackedMinor isEqualToString:minor]){
                         
                         //RSSI
                         int rssi = (int)[beacon getBeaconValue:BeaconValueIndex_RSSI].intValue;
@@ -293,7 +344,7 @@
                         [returnJSONParameters setObject:[NSNumber numberWithFloat:distance] forKey:@"distance"];
                         
                         // UUID address
-                        NSString *uuid = [beacon getBeaconValue:BeaconValueIndex_UUID].stringValue;
+//                        NSString *uuid = [beacon getBeaconValue:BeaconValueIndex_UUID].stringValue;
                         [returnJSONParameters setObject:[NSString stringWithFormat:@"%@",uuid] forKey:@"uuid"];
                         
                         // In Range
@@ -316,13 +367,17 @@
                         NSString *mac = [beacon getBeaconValue:BeaconValueIndex_Mac].stringValue;
                         [returnJSONParameters setObject:[NSString stringWithFormat:@"%@",mac] forKey:@"mac"];
                         
+                        // name
+                        NSString *name = [beacon getBeaconValue:BeaconValueIndex_Name].stringValue;
+                        [returnJSONParameters setObject:[NSString stringWithFormat:@"%@",name] forKey:@"name"];
+                        
                         // major
-                        int major = (int)[beacon getBeaconValue:BeaconValueIndex_Major].intValue;
-                        [returnJSONParameters setObject:[NSNumber numberWithInt:major] forKey:@"major"];
+//                        int major = (int)[beacon getBeaconValue:BeaconValueIndex_Major].intValue;
+                        [returnJSONParameters setObject:[NSNumber numberWithInt:major.intValue] forKey:@"major"];
                         
                         // minor
-                        int minor = (int)[beacon getBeaconValue:BeaconValueIndex_Minor].intValue;
-                        [returnJSONParameters setObject:[NSNumber numberWithInt:minor] forKey:@"minor"];
+//                        int minor = (int)[beacon getBeaconValue:BeaconValueIndex_Minor].intValue;
+                        [returnJSONParameters setObject:[NSNumber numberWithInt:minor.intValue] forKey:@"minor"];
                         
                         // battery
                         int battery = (int)[beacon getBeaconValue:BeaconValueIndex_BatteryLevel].intValue;
@@ -365,8 +420,11 @@
     for (int i = 0; i < beacons.count; i++) {
         //Checks if it's the monitored beacon
         MinewBeacon *beacon = beacons[i];
-        NSString *mac = [beacon getBeaconValue:BeaconValueIndex_Mac].stringValue;
-        if ([trackedBeacon isEqualToString:mac]){
+        NSString *uuid = [beacon getBeaconValue:BeaconValueIndex_UUID].stringValue;
+        NSString *major = [NSString stringWithFormat:@"%li", (long)[beacon getBeaconValue:BeaconValueIndex_Major].intValue];
+        NSString *minor = [NSString stringWithFormat:@"%li", (long)[beacon getBeaconValue:BeaconValueIndex_Minor].intValue];
+        //Checks if it's the monitored beacon
+        if ([trackedUUID isEqualToString:uuid] && [trackedMajor isEqualToString:major] && [trackedMinor isEqualToString:minor]){
             beaconInRange = YES;
         }
         NSLog(@">>> Appeared beacons:%@", beacons);
@@ -378,8 +436,11 @@
     for (int i = 0; i < beacons.count; i++) {
         //Checks if it's the monitored beacon
         MinewBeacon *beacon = beacons[i];
-        NSString *mac = [beacon getBeaconValue:BeaconValueIndex_Mac].stringValue;
-        if ([trackedBeacon isEqualToString:mac]){
+        NSString *uuid = [beacon getBeaconValue:BeaconValueIndex_UUID].stringValue;
+        NSString *major = [NSString stringWithFormat:@"%li", (long)[beacon getBeaconValue:BeaconValueIndex_Major].intValue];
+        NSString *minor = [NSString stringWithFormat:@"%li", (long)[beacon getBeaconValue:BeaconValueIndex_Minor].intValue];
+        //Checks if it's the monitored beacon
+        if ([trackedUUID isEqualToString:uuid] && [trackedMajor isEqualToString:major] && [trackedMinor isEqualToString:minor]){
             beaconInRange = NO;
         }
     }
@@ -404,9 +465,9 @@
    else if ([central state] == CBManagerStatePoweredOn) {
        NSLog(@">>> Bluetooth is ON");
        bluetoothON = YES;
-//       if (pluginInitialized) {
+       if (!scanning) {
         [self startScan];
-//       }
+       }
        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Bluetooth ON"];
        [self.pluginResult setKeepCallbackAsBool:YES];
        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
