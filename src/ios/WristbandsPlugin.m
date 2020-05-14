@@ -118,14 +118,14 @@
 //    [center requestAuthorizationWithOptions:(UNAuthorizationOptionAlert + UNAuthorizationOptionSound)
 //                          completionHandler:^(BOOL granted, NSError * _Nullable error) {
 //                              // Enable or disable features based on authorization.
-//        
+//
 //                                if (!error) {
 //                                    NSLog(@"Notification Authorization ok!");
 //                                }
 //                          }];
 //    [[UIApplication sharedApplication] registerForRemoteNotifications]; // you can also set here for local notification.
-//    
-//    
+//
+//
 //    UNMutableNotificationContent* content = [[UNMutableNotificationContent alloc] init];
 //    content.title = [NSString localizedUserNotificationStringForKey:@"WOHOOO! 😎" arguments:nil];
 //    content.body = [NSString localizedUserNotificationStringForKey:@"The set delegate Method got fired!"
@@ -211,6 +211,7 @@
     NSError *error;
     if (returnJSONParameters.count == 0) {
         [returnJSONParameters setObject:trackedBeacon forKey:@"mac"];
+        [returnJSONParameters setObject:[NSNumber numberWithBool:NO] forKey:@"range"];
     }
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:returnJSONParameters options:NSJSONWritingPrettyPrinted error:&error];
     if (!jsonData && error) {
