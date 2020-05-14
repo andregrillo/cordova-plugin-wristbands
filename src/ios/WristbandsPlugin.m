@@ -24,7 +24,7 @@
 
 @implementation WristbandsPlugin {
     NSTimer *timerDelay;
-    BOOL pluginInitialized;
+//    BOOL pluginInitialized;
     int timer;
     NSString *postURL;
     NSMutableDictionary *returnJSONParameters;
@@ -43,7 +43,7 @@
 
 - (void)setDevice:(CDVInvokedUrlCommand*)command
 {
-    pluginInitialized = NO;
+//    pluginInitialized = NO;
     self.pluginResult = nil;
     [self.pluginResult setKeepCallbackAsBool:YES];
 
@@ -114,7 +114,7 @@
 }
 
 - (void)setDelegate {
-    pluginInitialized = NO;
+//    pluginInitialized = NO;
     centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
     beaconManager = [MinewBeaconManager sharedInstance];
     beaconManager.delegate = self;
@@ -166,7 +166,7 @@
 //    beaconManager = [MinewBeaconManager sharedInstance];
 //    beaconManager.delegate = self;
     [self setDelegate];
-    pluginInitialized = YES;
+//    pluginInitialized = YES;
     [self startScan];
     NSLog(@">>> Wristband Plugin Initialized");
     self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Plugin initialized"];
@@ -404,9 +404,9 @@
    else if ([central state] == CBManagerStatePoweredOn) {
        NSLog(@">>> Bluetooth is ON");
        bluetoothON = YES;
-       if (pluginInitialized) {
+//       if (pluginInitialized) {
         [self startScan];
-       }
+//       }
        self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Bluetooth ON"];
        [self.pluginResult setKeepCallbackAsBool:YES];
        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
