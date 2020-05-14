@@ -210,8 +210,14 @@
     // Preparing the JSON
     NSError *error;
     if (returnJSONParameters.count == 0) {
+        //time stamp
+        NSDate *now = [NSDate date];
+        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+        [dateFormatter setDateFormat:@"dd-MM-yyyy HH:mm:ss"];
+        [returnJSONParameters setObject:[NSString stringWithFormat:@"%@", [dateFormatter stringFromDate:now]] forKey:@"timeStamp"];
         [returnJSONParameters setObject:trackedBeacon forKey:@"mac"];
         [returnJSONParameters setObject:[NSNumber numberWithBool:NO] forKey:@"range"];
+        
     }
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:returnJSONParameters options:NSJSONWritingPrettyPrinted error:&error];
     if (!jsonData && error) {
