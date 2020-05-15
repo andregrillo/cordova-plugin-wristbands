@@ -53,6 +53,9 @@
 
     self.commandHelper = command;
     //Plugin Inputs
+    self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"Parâmetros: %@", command.arguments]];
+    [self.pluginResult setKeepCallbackAsBool:YES];
+    [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     
     //Checking if parameters are valid
     //Beacon Model
@@ -135,8 +138,8 @@
     else {
         //No valid command parameter
         self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Invalid command input value"];
-        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
         [self.pluginResult setKeepCallbackAsBool:YES];
+        [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
     }
 }
 
