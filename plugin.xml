@@ -48,7 +48,7 @@
             </feature>
         </config-file>
     </platform>
-    <platform name="android">
+    <!--<platform name="android">
         <config-file parent="/*" target="res/xml/config.xml">
             <feature name="WristbandsPlugin">
                 <param name="android-package" value="cordova-plugin-wristbands.WristbandsPlugin" />
@@ -56,5 +56,5 @@
         </config-file>
         <config-file parent="/*" target="AndroidManifest.xml"></config-file>
         <source-file src="src/android/WristbandsPlugin.java" target-dir="src/cordova-plugin-wristbands/WristbandsPlugin" />
-    </platform>
+    </platform>-->
 </plugin>
