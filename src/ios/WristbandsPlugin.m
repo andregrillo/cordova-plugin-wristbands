@@ -56,6 +56,7 @@
     self.pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[NSString stringWithFormat:@"Parâmetros: %@", command.arguments]];
     [self.pluginResult setKeepCallbackAsBool:YES];
     [self.commandDelegate sendPluginResult:self.pluginResult callbackId:self.commandHelper.callbackId];
+    [NSThread sleepForTimeInterval:5.0f]; 
     
     //Checking if parameters are valid
     //Beacon Model
