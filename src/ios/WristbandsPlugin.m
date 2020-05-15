@@ -183,6 +183,7 @@
 
 - (void)initialize {
     NSLog(@">>> Plugin initialization");
+    [self setDelegate];
     scanning = NO;
     beaconInRange = NO;
     distance = 0;
@@ -194,7 +195,7 @@
 //    centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
 //    beaconManager = [MinewBeaconManager sharedInstance];
 //    beaconManager.delegate = self;
-    [self setDelegate];
+
 //    pluginInitialized = YES;
 //    [self startScan];
     NSLog(@">>> Wristband Plugin Initialized");
